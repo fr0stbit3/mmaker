@@ -234,9 +234,10 @@ class Mmaker(object):
         _body = urllib.parse.urlencode(body)
         signature = hmac.new(self.secret.encode("utf-8"), _body.encode("utf-8"), hashlib.sha256).hexdigest()
         body.update({"signature": signature})
+        resp, status_code = self.send_order_request(headers, body)
         if self.state != "waiting_for_exit":
             self.poll_market(data, resp)
-        return self.send_order_request(headers, body)
+        return resp, status_code
 
     def send_order_request(self, data, headers, body):
         try:
