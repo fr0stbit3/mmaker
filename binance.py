@@ -83,17 +83,35 @@ class Mmaker(object):
         close = data[4]
         close = float(close)
         close = round(close, 5)
+        _open = data[1]
+        _open = float(_open)
+        _open = round(_open, 5)
+        pdata = resp.json()[-2]
+        pclose = pdata[4]
+        pclose = float(pclose)
+        pclose = round(pclose, 5)
+        popen = pdata[1]
+        popen = float(popen)
+        popen = float(popen, 5)
+        if popen >= pclose:
+            candle1 = "RED"
+        else:
+            candle1 = "GREEN"
+        if _open >= close:
+            candle2 = "RED"
+        else:
+            candle2 = "GREEN"
         data = {"symbol": self.symbol,
                 "side": self.side,
                 "qty": self.qty,
                 "increment": self.increment,
                 "decrement": self.decrement
                 }
-        if self.side == "SELL" and close < self.price:
+        if self.side == "BUY" and candle1 == "GREEN" and candle2 == "GREEN":
             self.wait = False
             self.symbol = None
             asyncio.ensure_future(self.recycle_order(data))
-        if self.side == "BUY" and close > self.price:
+        if self.side == "SELL" and candle1 == "RED" and candle2 == "RED":
             self.wait = False
             self.symbol = None
             asyncio.ensure_future(self.recycle_order(data))
