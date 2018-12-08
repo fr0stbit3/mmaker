@@ -96,6 +96,7 @@ class Mmaker(object):
         else:
             candle2 = "GREEN"
         entry = False
+        logger.info("Checking for entry")
         if self.side == "BUY" and candle1 == "GREEN" and candle2 == "GREEN":
             entry = True
         if self.side == "SELL" and candle1 == "RED" and candle2 == "RED":
@@ -123,6 +124,7 @@ class Mmaker(object):
         close = round(close, 5)
         exit = False
         side = None
+        logger.info("Checking for exit at entry %s close %s" % (self.price, close))
         if self.side == "BUY":
             if close <= self.price - self.decrement:
                 logger.info("Stop loss hit")
