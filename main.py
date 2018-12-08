@@ -86,7 +86,7 @@ class Mmaker(object):
         pclose = round(pclose, 5)
         popen = pdata[1]
         popen = float(popen)
-        popen = float(popen, 5)
+        popen = round(popen, 5)
         if popen >= pclose:
             candle1 = "RED"
         else:
@@ -255,7 +255,7 @@ class Mmaker(object):
             return data, status_code
         else:
             resp = resp.json()
-            logger.info("Order entry at %s" % resp)
+            logger.info("Order at %s" % resp)
             return resp, status_code
 
     async def handle_resume(self, request):
