@@ -29,6 +29,7 @@ class Mmaker(object):
         self.side = None
         self.symbol = None
         self.increment = 0
+        seflf.wait = False
         self.decrement = 0
         self.qty = 0
         self.cycle = 0
@@ -59,8 +60,33 @@ class Mmaker(object):
             if self.symbol is None:
                 await asyncio.sleep(5)
                 continue
+            if self.wait is True:
+                self.wait_for_entry()
+                await asyncio.sleep(60)
+                continue
             self.fetch_candle()
             await asyncio.sleep(60)
+
+    def wait_for_entry(self):
+        symbol = self.symbol
+        symbol = self.get_symbol(symbol)
+        body = {"symbol": symbol,
+                "interval": "1m"
+                }
+        try:
+            resp = requests.get(self.candle_url, params=body)
+        except Exception as e:
+            logger.info("Error fetching candles %s" % e)
+            return
+        data = resp.json()
+        data = data[-1]
+        close = data[4]
+        close = float(close)
+        close = round(close, 5)
+        if self.side == "SELL" and close < self.price:
+            self.wait = False
+        if self.side == "BUY": and close > self.price:
+            self.wait = False
 
     def fetch_candle(self):
         symbol = self.symbol
@@ -137,14 +163,14 @@ class Mmaker(object):
                 data = resp.json()
                 logger.info("Order exit at %s" % data)
                 if reverse is True:
-                    logger.info("Switching sides to %s" % side)
-                    self.side = side
+                    logger.info("Stop loss was hit")
                     trades = data["fills"]
                     total_price = sum(float(k["price"]) * float(k["qty"]) for k in trades)
                     total_qty = sum(float(k["qty"]) for k in trades)
                     price = total_price / total_qty
                     price = round(price, 5)
                     self.price = price
+                    self.wait = True
                     return
                 data = {"symbol": self.symbol,
                         "side": self.side,
@@ -153,9 +179,6 @@ class Mmaker(object):
                         "decrement": self.decrement
                         }
                 self.symbol = None
-                if self.cycle == 10:
-                    logger.info("10 cycles done")
-                    return
                 asyncio.ensure_future(self.recycle_order(data))
             else:
                 data = resp.json()
