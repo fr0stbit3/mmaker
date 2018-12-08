@@ -171,6 +171,10 @@ class Mmaker(object):
         data = resp.json()
         return data
 
+    def get_symbol(self, symbol):
+        symbol = symbol.replace("/", "")
+        return symbol
+
     def setup_app(self):
         self.app.router.add_routes([web.post("/order", self.handle_order)])
         self.app.router.add_routes([web.post("/update", self.update_cycle)])
@@ -206,6 +210,10 @@ class Mmaker(object):
         self.cycle = 0
         body, status_code = self.make_order(data)
         return web.json_response(body, status=status_code)
+
+    def get_header(self):
+        headers = {"X-MBX-APIKEY": self.api_key}
+        return headers
 
     def make_order(self, data):
         symbol = data["symbol"]
