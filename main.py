@@ -207,7 +207,7 @@ class Mmaker(object):
     async def handle_order(self, request):
         data = await request.json()
         logger.info("Handle post %s" % data)
-        if self.state != "waiting_for_init":
+        if self.state == "waiting_for_exit":
             return web.json_response({"data": "Exit first"}, status=status_code)
         self.cycle = 0
         body, status_code = self.make_order(data)
