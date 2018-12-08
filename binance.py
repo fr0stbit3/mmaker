@@ -29,7 +29,7 @@ class Mmaker(object):
         self.side = None
         self.symbol = None
         self.increment = 0
-        seflf.wait = False
+        self.wait = False
         self.decrement = 0
         self.qty = 0
         self.cycle = 0
@@ -83,10 +83,20 @@ class Mmaker(object):
         close = data[4]
         close = float(close)
         close = round(close, 5)
+        data = {"symbol": self.symbol,
+                "side": self.side,
+                "qty": self.qty,
+                "increment": self.increment,
+                "decrement": self.decrement
+                }
         if self.side == "SELL" and close < self.price:
             self.wait = False
-        if self.side == "BUY": and close > self.price:
+            self.symbol = None
+            asyncio.ensure_future(self.recycle_order(data))
+        if self.side == "BUY" and close > self.price:
             self.wait = False
+            self.symbol = None
+            asyncio.ensure_future(self.recycle_order(data))
 
     def fetch_candle(self):
         symbol = self.symbol
