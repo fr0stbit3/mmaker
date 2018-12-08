@@ -239,7 +239,7 @@ class Mmaker(object):
             self.poll_market(data, resp)
         return resp, status_code
 
-    def send_order_request(self, data, headers, body):
+    def send_order_request(self, headers, body):
         try:
             resp = requests.post(self.order_url, headers=headers, params=body)
             status_code = resp.status_code
