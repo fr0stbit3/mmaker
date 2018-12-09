@@ -97,9 +97,9 @@ class Mmaker(object):
             candle2 = "GREEN"
         entry = False
         logger.info("Checking for entry")
-        if self.side == "BUY" and candle1 == "GREEN" and candle2 == "GREEN":
+        if self.side == "BUY" and candle1 == "GREEN" and candle2 == "GREEN" and pclose < close:
             entry = True
-        if self.side == "SELL" and candle1 == "RED" and candle2 == "RED":
+        if self.side == "SELL" and candle1 == "RED" and candle2 == "RED" and pclose > close:
             entry = True
         if entry:
             logger.info("Entering cycle %s" % (self.cycle + 1))
