@@ -124,6 +124,7 @@ class Mmaker(object):
         close = round(close, 5)
         exit = False
         side = None
+        revert = None
         logger.info("Checking for exit at entry %s close %s" % (self.price, close))
         if self.side == "BUY":
             if close <= self.price - self.decrement:
@@ -131,22 +132,26 @@ class Mmaker(object):
                 exit = True
                 side = "SELL"
                 self.loss += 1
+                revert = "loss"
             if close >= self.price + self.increment:
                 logger.info("Target profit hit")
                 exit = True
                 side = "SELL"
                 self.wins += 1
+                revert = "wins"
         else:
             if close >= self.price + self.decrement:
                 logger.info("Stop loss hit")
                 exit = True
                 side = "BUY"
                 self.loss += 1
+                revert = "loss"
             if close <= self.price - self.increment:
                 logger.info("Target profit hit")
                 side = "BUY"
                 exit = True
                 self.wins += 1
+                revert = "wins"
         if exit:
             logger.info("Exiting cycle %s" % self.cycle)
             logger.info("Wins %s loss %s" % (self.wins, self.loss))
@@ -158,6 +163,12 @@ class Mmaker(object):
             _, status_code = self.make_order(data)
             if status_code in (200, 201):
                 self.state = "waiting_for_entry"
+            else:
+                self.qty -= 1
+                if revert == "loss":
+                    self.loss -= 1
+                else:
+                    self.wins -= 1
         
     def fetch_candle(self):
         symbol = self.symbol
