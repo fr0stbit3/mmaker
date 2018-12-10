@@ -35,6 +35,7 @@ class Mmaker(object):
         self.cycle = 0
         self.wins = 0
         self.loss = 0
+        self.net = 0
         self.setup_app()
         t = Thread(target=self.setup_poller)
         t.start()
@@ -160,8 +161,9 @@ class Mmaker(object):
                     "side": side,
                     "qty": self.qty
                     }
-            _, status_code = self.make_order(data)
+            body, status_code = self.make_order(data)
             if status_code in (200, 201):
+                self.calculate_net(body)
                 self.state = "waiting_for_entry"
             else:
                 self.qty -= 1
@@ -282,6 +284,20 @@ class Mmaker(object):
         self.state = "waiting_for_exit"
         self.side = data["side"]
         return web.json_response({"data": "Ok"}, status=200)
+
+    def calculate_net(self, resp):
+        trades = resp["fills"]
+        total_price = sum(float(k["price"]) * float(k["qty"]) for k in trades)
+        total_qty = sum(float(k["qty"]) for k in trades)
+        price = total_price / total_qty
+        price = round(price, 5)
+        if self.side == "SELL":
+            net = (self.price - price) * self.qty
+        else:
+            net = (price - self.price) * self.qty
+        self.net += net
+        logger.info("Net for current cycle %s" % net)
+        logger.info("New net %s" % self.net)
 
     def poll_market(self, data, resp):
         trades = resp["fills"]
