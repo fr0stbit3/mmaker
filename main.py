@@ -36,6 +36,7 @@ class Mmaker(object):
         self.wins = 0
         self.loss = 0
         self.net = 0
+        self.commission = 0
         self.setup_app()
         t = Thread(target=self.setup_poller)
         t.start()
@@ -166,7 +167,6 @@ class Mmaker(object):
                 self.calculate_net(body)
                 self.state = "waiting_for_entry"
             else:
-                self.qty -= 1
                 if revert == "loss":
                     self.loss -= 1
                 else:
@@ -184,7 +184,15 @@ class Mmaker(object):
             logger.info("Error fetching candles %s" % e)
             return
         data = resp.json()
-        return data
+        current_time = int(time.time())
+        new_data = []
+        for k in data:
+            t = k[0]
+            t = int(t / 1000)
+            if t > current_time - 60:
+                continue
+            new_data.append(k)
+        return new_data
 
     def get_symbol(self, symbol):
         symbol = symbol.replace("/", "")
@@ -205,6 +213,7 @@ class Mmaker(object):
         body, status_code = self.make_order(data)
         if status_code in (200, 201):
             logger.info("Wins %s Loss %s" % (self.wins, self.loss))
+            self.calculate_net(body)
             self.wins = 0
             self.loss = 0
             self.state = "waiting_for_init"
@@ -291,18 +300,24 @@ class Mmaker(object):
         total_qty = sum(float(k["qty"]) for k in trades)
         price = total_price / total_qty
         price = round(price, 5)
+        commission = sum(float(k["commission"]) if k["commissionAsset"] == "USDT" else
+                         float(k["commission"]) * float(k["price"]) for k in trades)
         if self.side == "SELL":
             net = (self.price - price) * self.qty
         else:
             net = (price - self.price) * self.qty
         self.net += net
+        self.commission += commission
         logger.info("Net for current cycle %s" % net)
         logger.info("New net %s" % self.net)
+        logger.info("New net after commission %s" % (self.net - self.commission))
 
     def poll_market(self, data, resp):
         trades = resp["fills"]
         total_price = sum(float(k["price"]) * float(k["qty"]) for k in trades)
         total_qty = sum(float(k["qty"]) for k in trades)
+        commission = sum(float(k["commission"]) if k["commissionAsset"] == "USDT" else
+                         float(k["commission"]) * float(k["price"]) for k in trades)
         price = total_price / total_qty
         price = round(price, 5)
         side = data["side"]
@@ -316,6 +331,7 @@ class Mmaker(object):
         self.decrement = decrement
         self.qty = total_qty
         self.cycle += 1
+        self.commission += commission
         self.state = "waiting_for_exit"
 
 
