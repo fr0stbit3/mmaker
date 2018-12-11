@@ -62,11 +62,11 @@ class Mmaker(object):
     async def poller(self):
         while True:
             if self.state == "waiting_for_exit":
-                self.check_for_exit()
+                asyncio.ensure_future(self.check_for_exit())
                 await asyncio.sleep(60)
                 continue
             if self.state == "waiting_for_entry":
-                self.check_for_entry()
+                asyncio.ensure_future(self.check_for_entry())
                 await asyncio.sleep(60)
                 continue
             await asyncio.sleep(5)
@@ -99,9 +99,9 @@ class Mmaker(object):
             candle2 = "GREEN"
         entry = False
         logger.info("Checking for entry")
-        if self.side == "BUY" and candle1 == "GREEN" and candle2 == "GREEN" and pclose < close:
+        if self.side == "BUY" and candle1 == "GREEN" and candle2 == "GREEN" and pclose < close and popen < _open:
             entry = True
-        if self.side == "SELL" and candle1 == "RED" and candle2 == "RED" and pclose > close:
+        if self.side == "SELL" and candle1 == "RED" and candle2 == "RED" and pclose > close and popen > _open:
             entry = True
         if entry:
             logger.info("Entering cycle %s" % (self.cycle + 1))
