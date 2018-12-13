@@ -9,13 +9,20 @@ import base64
 import hashlib
 from requests.auth import HTTPBasicAuth
 from datetime import datetime
-from logger import logger
 from aiohttp import web
 from threading import Thread
 
 
 os.environ["TZ"] = "Asia/Kolkata"
+import logging
+from logging.handlers import RotatingFileHandler
 
+
+os.environ["TZ"] = "Asia/Kolkata"
+handler = RotatingFileHandler("main.log", maxBytes=52428800, backupCount=10)
+logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", handlers=[handler])
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 class Mmaker(object):
 
@@ -71,7 +78,7 @@ class Mmaker(object):
                 continue
             await asyncio.sleep(5)
 
-    def check_for_entry(self):
+    async def check_for_entry(self):
         candles = self.fetch_candle()
         if not candles:
             return
@@ -89,19 +96,30 @@ class Mmaker(object):
         popen = pdata[1]
         popen = float(popen)
         popen = round(popen, 5)
-        if popen >= pclose:
+        ppdata = candles[-3]
+        ppclose = pdata[4]
+        ppclose = float(pclose)
+        ppclose = round(pclose, 5)
+        ppopen = pdata[1]
+        ppopen = float(popen)
+        ppopen = round(popen, 5)
+        if ppopen >= ppclose:
             candle1 = "RED"
         else:
             candle1 = "GREEN"
-        if _open >= close:
+        if popen >= pclose:
             candle2 = "RED"
         else:
             candle2 = "GREEN"
+        if _open >= close:
+            candle3 = "RED"
+        else:
+            candle3 = "GREEN"
         entry = False
         logger.info("Checking for entry")
-        if self.side == "BUY" and candle1 == "GREEN" and candle2 == "GREEN" and pclose < close and popen < _open:
+        if self.side == "BUY" and candle1 == "GREEN" and candle2 == "GREEN" and candle3 == "GREEN":
             entry = True
-        if self.side == "SELL" and candle1 == "RED" and candle2 == "RED" and pclose > close and popen > _open:
+        if self.side == "SELL" and candle1 == "RED" and candle2 == "RED" and candle3 == "GREEN":
             entry = True
         if entry:
             logger.info("Entering cycle %s" % (self.cycle + 1))
@@ -116,7 +134,7 @@ class Mmaker(object):
             if status_code in (200, 201):
                 self.state = "waiting_for_exit"
 
-    def check_for_exit(self):
+    async def check_for_exit(self):
         candles = self.fetch_candle()
         if not candles:
             return
