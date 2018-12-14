@@ -119,7 +119,7 @@ class Mmaker(object):
         logger.info("Checking for entry")
         if self.side == "BUY" and candle1 == "GREEN" and candle2 == "GREEN" and candle3 == "GREEN":
             entry = True
-        if self.side == "SELL" and candle1 == "RED" and candle2 == "RED" and candle3 == "GREEN":
+        if self.side == "SELL" and candle1 == "RED" and candle2 == "RED" and candle3 == "RED":
             entry = True
         if entry:
             logger.info("Entering cycle %s" % (self.cycle + 1))
@@ -221,6 +221,19 @@ class Mmaker(object):
         self.app.router.add_routes([web.post("/update", self.update_cycle)])
         self.app.router.add_routes([web.post("/exit", self.handle_exit)])
         self.app.router.add_routes([web.post("/resume", self.handle_resume)])
+        self.app.router.add_routes([web.post("/wait", self.handle_wait)])
+
+    async def handle_wait(self, request):
+        data = await request.json()
+        if self.state != "waiting_for_init":
+            return web.json_response({"data": "Error"}, status=400)
+        self.symbol = data["symbol"]
+        self.side = data["side"]
+        self.increment = data["increment"]
+        self.decrement = data["decrement"]
+        self.qty = data["qty"]
+        self.state = "waiting_for_entry"
+        return web.json_response({"data": "Ok"}, status=200)
 
     async def handle_exit(self, request):
         side = "BUY" if self.side == "SELL" else "SELL"
