@@ -36,6 +36,7 @@ class Mmaker(object):
         self.side = None
         self.symbol = None
         self.increment = 0
+        self.poll = True
         self.state = "waiting_for_init"
         self.decrement = 0
         self.qty = 0
@@ -68,6 +69,9 @@ class Mmaker(object):
 
     async def poller(self):
         while True:
+            if not self.poll:
+                await asyncio.sleep(5)
+                continue
             if self.state == "waiting_for_exit":
                 asyncio.ensure_future(self.check_for_exit())
                 await asyncio.sleep(60)
@@ -97,12 +101,12 @@ class Mmaker(object):
         popen = float(popen)
         popen = round(popen, 5)
         ppdata = candles[-3]
-        ppclose = pdata[4]
-        ppclose = float(pclose)
-        ppclose = round(pclose, 5)
-        ppopen = pdata[1]
-        ppopen = float(popen)
-        ppopen = round(popen, 5)
+        ppclose = ppdata[4]
+        ppclose = float(ppclose)
+        ppclose = round(ppclose, 5)
+        ppopen = ppdata[1]
+        ppopen = float(ppopen)
+        ppopen = round(ppopen, 5)
         if ppopen >= ppclose:
             candle1 = "RED"
         else:
@@ -183,6 +187,9 @@ class Mmaker(object):
             body, status_code = self.make_order(data)
             if status_code in (200, 201):
                 self.calculate_net(body)
+                self.poll = False
+                await asyncio.sleep(200)
+                self.poll = True
                 self.state = "waiting_for_entry"
             else:
                 if revert == "loss":
